@@ -84,15 +84,16 @@ class DecisionRecord:
     """Decision record model."""
     
     def __init__(self, id=None, decision_id=None, context=None, constraints=None,
-                 decision_description=None, status=None, rationale=None,
+                 decision_description=None, decision_details=None, status=None, rationale=None,
                  assumptions=None, consequences=None, tradeoffs=None,
-                 evidence=None, options_considered=None, version=1,
-                 created_at=None, updated_at=None):
+                 evidence=None, options_considered=None, code_reference=None, metadata=None,
+                 version=1, created_at=None, updated_at=None):
         self.id = id or str(uuid.uuid4())
         self.decision_id = decision_id
         self.context = context
         self.constraints = constraints
         self.decision_description = decision_description
+        self.decision_details = decision_details
         self.status = status or DecisionRecordStatus.PROPOSED.value
         self.rationale = rationale
         self.assumptions = assumptions
@@ -100,6 +101,8 @@ class DecisionRecord:
         self.tradeoffs = tradeoffs
         self.evidence = evidence
         self.options_considered = options_considered
+        self.code_reference = code_reference
+        self.metadata = metadata
         self.version = version
         self.created_at = created_at
         self.updated_at = updated_at
@@ -112,6 +115,7 @@ class DecisionRecord:
             'context': self.context,
             'constraints': self.constraints,
             'decision_description': self.decision_description,
+            'decision_details': self.decision_details,
             'status': self.status,
             'rationale': self.rationale,
             'assumptions': self.assumptions,
@@ -119,6 +123,8 @@ class DecisionRecord:
             'tradeoffs': self.tradeoffs,
             'evidence': self.evidence,
             'options_considered': self.options_considered,
+            'code_reference': self.code_reference,
+            'metadata': self.metadata,
             'version': self.version,
             'created_at': self.created_at.isoformat() if isinstance(self.created_at, datetime) else self.created_at,
             'updated_at': self.updated_at.isoformat() if isinstance(self.updated_at, datetime) else self.updated_at
@@ -137,6 +143,7 @@ class DecisionRecord:
             context=data.get('context'),
             constraints=data.get('constraints'),
             decision_description=data.get('decision_description'),
+            decision_details=data.get('decision_details'),
             status=data.get('status'),
             rationale=data.get('rationale'),
             assumptions=data.get('assumptions'),
@@ -144,6 +151,8 @@ class DecisionRecord:
             tradeoffs=data.get('tradeoffs'),
             evidence=data.get('evidence'),
             options_considered=data.get('options_considered'),
+            code_reference=data.get('code_reference'),
+            metadata=data.get('metadata'),
             version=data.get('version', 1),
             created_at=data.get('created_at'),
             updated_at=data.get('updated_at')

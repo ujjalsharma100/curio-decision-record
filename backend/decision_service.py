@@ -213,10 +213,11 @@ class DecisionService:
     
     def create_decision_record(self, decision_id: str, decision_description: str,
                               context: str = None, constraints: str = None,
-                              status: str = None, rationale: str = None,
+                              decision_details: str = None, status: str = None, rationale: str = None,
                               assumptions: str = None, consequences: str = None,
                               tradeoffs: str = None, evidence: str = None,
-                              options_considered: str = None) -> Dict:
+                              options_considered: str = None, code_reference: str = None,
+                              metadata: dict = None) -> Dict:
         """Create a new decision record."""
         # Verify decision exists
         decision = self.db.get_decision(decision_id)
@@ -232,6 +233,7 @@ class DecisionService:
             context=context,
             constraints=constraints,
             decision_description=decision_description,
+            decision_details=decision_details,
             status=status or DecisionRecordStatus.PROPOSED.value,
             rationale=rationale,
             assumptions=assumptions,
@@ -239,6 +241,8 @@ class DecisionService:
             tradeoffs=tradeoffs,
             evidence=evidence,
             options_considered=options_considered,
+            code_reference=code_reference,
+            metadata=metadata,
             version=1  # Always starts at version 1, auto-increments on updates
         )
         record_data = record.to_dict()
@@ -261,6 +265,7 @@ class DecisionService:
             'context': result.get('context'),
             'constraints': result.get('constraints'),
             'decision_description': result.get('decision_description'),
+            'decision_details': result.get('decision_details'),
             'status': result.get('status'),
             'rationale': result.get('rationale'),
             'assumptions': result.get('assumptions'),
@@ -268,6 +273,8 @@ class DecisionService:
             'tradeoffs': result.get('tradeoffs'),
             'evidence': result.get('evidence'),
             'options_considered': result.get('options_considered'),
+            'code_reference': result.get('code_reference'),
+            'metadata': result.get('metadata'),
             'version': 1,
             'created_at': str(result.get('created_at', '')),
             'updated_at': str(result.get('updated_at', ''))
@@ -307,9 +314,10 @@ class DecisionService:
     
     def update_decision_record(self, record_id: str, context: str = None,
                               constraints: str = None, decision_description: str = None,
-                              rationale: str = None, assumptions: str = None,
+                              decision_details: str = None, rationale: str = None, assumptions: str = None,
                               consequences: str = None, tradeoffs: str = None,
-                              evidence: str = None, options_considered: str = None) -> Dict:
+                              evidence: str = None, options_considered: str = None, code_reference: str = None,
+                              metadata: dict = None) -> Dict:
         """
         Update a decision record with automatic versioning.
 
@@ -325,21 +333,26 @@ class DecisionService:
         # Build update data
         record_data = {}
         updatable_fields = [
-            'context', 'constraints', 'decision_description', 'rationale',
-            'assumptions', 'consequences', 'tradeoffs', 'evidence', 'options_considered'
+            'context', 'constraints', 'decision_description', 'decision_details', 'rationale',
+            'assumptions', 'consequences', 'tradeoffs', 'evidence', 'options_considered', 'code_reference'
         ]
 
         local_vars = {
             'context': context, 'constraints': constraints,
-            'decision_description': decision_description, 'rationale': rationale,
+            'decision_description': decision_description, 'decision_details': decision_details,
+            'rationale': rationale,
             'assumptions': assumptions, 'consequences': consequences,
             'tradeoffs': tradeoffs, 'evidence': evidence,
-            'options_considered': options_considered
+            'options_considered': options_considered, 'code_reference': code_reference
         }
 
         for field in updatable_fields:
             if local_vars[field] is not None:
                 record_data[field] = local_vars[field]
+
+        # Handle metadata separately (JSONB field)
+        if metadata is not None:
+            record_data['metadata'] = metadata
 
         # If no actual changes, return current record
         if not record_data:
@@ -372,7 +385,7 @@ class DecisionService:
         if not existing_version:
             snapshot_data = {
                 field: current_record.get(field)
-                for field in updatable_fields + ['status', 'version', 'decision_id']
+                for field in updatable_fields + ['metadata', 'status', 'version', 'decision_id']
             }
             snapshot_data['id'] = current_record['id']
             snapshot_data['created_at'] = str(current_record.get('created_at', ''))
@@ -430,10 +443,11 @@ class DecisionService:
     def create_decision_record_by_names(self, project_name: str, decision_title: str,
                                       decision_description: str,
                                       context: str = None, constraints: str = None,
-                                      status: str = None, rationale: str = None,
+                                      decision_details: str = None, status: str = None, rationale: str = None,
                                       assumptions: str = None, consequences: str = None,
                                       tradeoffs: str = None, evidence: str = None,
-                                      options_considered: str = None) -> Dict:
+                                      options_considered: str = None, code_reference: str = None,
+                                      metadata: dict = None) -> Dict:
         """Create a decision record by project name and decision title."""
         decision = self.get_decision_by_title(project_name, decision_title)
         if not decision:
@@ -444,21 +458,25 @@ class DecisionService:
             decision_description=decision_description,
             context=context,
             constraints=constraints,
+            decision_details=decision_details,
             status=status,
             rationale=rationale,
             assumptions=assumptions,
             consequences=consequences,
             tradeoffs=tradeoffs,
             evidence=evidence,
-            options_considered=options_considered
+            options_considered=options_considered,
+            code_reference=code_reference,
+            metadata=metadata
         )
     
     def update_decision_record_by_description(self, project_name: str, decision_title: str,
                                             decision_description: str,
                                             context: str = None, constraints: str = None,
-                                            rationale: str = None, assumptions: str = None,
+                                            decision_details: str = None, rationale: str = None, assumptions: str = None,
                                             consequences: str = None, tradeoffs: str = None,
-                                            evidence: str = None, options_considered: str = None) -> Dict:
+                                            evidence: str = None, options_considered: str = None, code_reference: str = None,
+                                            metadata: dict = None) -> Dict:
         """Update a decision record by project name, decision title, and description."""
         record = self.get_decision_record_by_description(project_name, decision_title, decision_description)
         if not record:
@@ -468,12 +486,15 @@ class DecisionService:
             record_id=record['id'],
             context=context,
             constraints=constraints,
+            decision_details=decision_details,
             rationale=rationale,
             assumptions=assumptions,
             consequences=consequences,
             tradeoffs=tradeoffs,
             evidence=evidence,
-            options_considered=options_considered
+            options_considered=options_considered,
+            code_reference=code_reference,
+            metadata=metadata
         )
     
     def change_record_status_by_description(self, project_name: str, decision_title: str,
@@ -785,8 +806,9 @@ class DecisionService:
         }
 
         comparable_fields = [
-            'context', 'constraints', 'decision_description', 'rationale',
-            'assumptions', 'consequences', 'tradeoffs', 'evidence', 'options_considered'
+            'context', 'constraints', 'decision_description', 'decision_details', 'rationale',
+            'assumptions', 'consequences', 'tradeoffs', 'evidence', 'options_considered', 'code_reference',
+            'metadata'
         ]
 
         for field in comparable_fields:
@@ -821,15 +843,15 @@ class DecisionService:
 
         # Create snapshot of current state before revert (only if it doesn't already exist)
         updatable_fields = [
-            'context', 'constraints', 'decision_description', 'rationale',
-            'assumptions', 'consequences', 'tradeoffs', 'evidence', 'options_considered'
+            'context', 'constraints', 'decision_description', 'decision_details', 'rationale',
+            'assumptions', 'consequences', 'tradeoffs', 'evidence', 'options_considered', 'code_reference'
         ]
 
         existing_version = self.db.get_record_version_by_number(record_id, current_version)
         if not existing_version:
             snapshot_data = {
                 field: current_record.get(field)
-                for field in updatable_fields + ['status', 'version', 'decision_id']
+                for field in updatable_fields + ['metadata', 'status', 'version', 'decision_id']
             }
             snapshot_data['id'] = current_record['id']
             snapshot_data['created_at'] = str(current_record.get('created_at', ''))

@@ -114,6 +114,7 @@ Content-Type: application/json
 
 {
   "decision_description": "Use PostgreSQL for primary data storage",
+  "decision_details": "We will use PostgreSQL 15+ with connection pooling via PgBouncer. Read replicas for analytics workload.",
   "status": "proposed",
   "context": "We need a reliable database for our growing application",
   "constraints": "Must support ACID transactions, horizontal scaling",
@@ -122,7 +123,8 @@ Content-Type: application/json
   "consequences": "Team needs PostgreSQL expertise, hosting costs increase",
   "tradeoffs": "Giving up NoSQL flexibility for relational guarantees",
   "evidence": "https://benchmark.com/postgresql-performance",
-  "options_considered": "MySQL - less feature-rich, MongoDB - not suitable for relational data"
+  "options_considered": "MySQL - less feature-rich, MongoDB - not suitable for relational data",
+  "code_reference": "backend/database_service.py:56-72\n\nwith self.get_connection() as conn:\n    cursor = conn.cursor()"
 }
 ```
 
@@ -130,6 +132,21 @@ Required fields:
 - `decision_description` (always required)
 
 For `implemented_inferred` status, all other fields are optional.
+
+**Field descriptions:**
+
+| Field | Description |
+|-------|-------------|
+| `decision_details` | Detailed explanation of the decision. Elaborates on the decision description with implementation specifics, examples, or additional context. |
+| `context` | Why this decision is being made now. The background situation, pressure, or trigger that necessitates it. |
+| `constraints` | Hard requirements or limitations that must be satisfied. Explains why certain "obvious" options weren't viable. |
+| `rationale` | Why this specific option was chosen over alternatives. The reasoning and justification. |
+| `assumptions` | Things that must remain true for this decision to stay valid. When assumptions break, the decision should be re-evaluated. |
+| `consequences` | Downstream impact, both positive and negative. What it will cause, enable, or require going forward. |
+| `tradeoffs` | What is explicitly being given up. Makes costs intentional so future teams know pain points are by design. |
+| `evidence` | Links to resources (papers, blogs, benchmarks, experiments) that support and defend the decision. |
+| `options_considered` | Alternatives that were evaluated and why they were rejected. Prevents re-proposing already-rejected ideas. |
+| `code_reference` | References to implemented code: file paths, line ranges (e.g. src/utils.py:42-58), and code snippets that highlight where the decision is implemented. |
 
 Note: Version starts at 1 and auto-increments on updates. Cannot be set manually.
 
@@ -148,6 +165,8 @@ Content-Type: application/json
   "rationale": "Updated rationale"
 }
 ```
+
+Same field descriptions as Create Record apply. Provide only the fields you wish to update.
 
 **Version Control Behavior:**
 - Version auto-increments on every update

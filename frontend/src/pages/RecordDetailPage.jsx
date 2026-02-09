@@ -162,10 +162,18 @@ function RecordDetailPage() {
               <p className="text-gray-700 whitespace-pre-wrap">{record.decision_description}</p>
             </div>
 
+            {/* Decision Details */}
+            {record.decision_details && (
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-3" title="Detailed explanation of the decision.">Decision Details</h2>
+                <p className="text-gray-700 whitespace-pre-wrap">{record.decision_details}</p>
+              </div>
+            )}
+
             {/* Context */}
             {record.context && (
               <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-3">Context</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-3" title="Why this decision is being made now. The background situation, pressure, or trigger that necessitates it.">Context</h2>
                 <p className="text-gray-700 whitespace-pre-wrap">{record.context}</p>
               </div>
             )}
@@ -173,7 +181,7 @@ function RecordDetailPage() {
             {/* Constraints */}
             {record.constraints && (
               <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-3">Constraints</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-3" title="Hard requirements or limitations that must be satisfied. Explains why certain obvious options weren't viable.">Constraints</h2>
                 <p className="text-gray-700 whitespace-pre-wrap">{record.constraints}</p>
               </div>
             )}
@@ -181,7 +189,7 @@ function RecordDetailPage() {
             {/* Assumptions - Highlighted */}
             {record.assumptions && (
               <div className="bg-amber-50 rounded-lg shadow-md p-6 border border-amber-200">
-                <h2 className="text-lg font-semibold text-amber-800 mb-3 flex items-center space-x-2">
+                <h2 className="text-lg font-semibold text-amber-800 mb-3 flex items-center space-x-2" title="Things that must remain true for this decision to stay valid. When assumptions break or expire, the decision should be re-evaluated.">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                       d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -198,7 +206,7 @@ function RecordDetailPage() {
             {/* Rationale */}
             {record.rationale && (
               <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-3">Rationale</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-3" title="Why this specific option was chosen over alternatives. The reasoning and justification.">Rationale</h2>
                 <p className="text-gray-700 whitespace-pre-wrap">{record.rationale}</p>
               </div>
             )}
@@ -206,7 +214,7 @@ function RecordDetailPage() {
             {/* Consequences */}
             {record.consequences && (
               <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-3">Consequences</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-3" title="Downstream impact, both positive and negative. What it will cause, enable, or require going forward.">Consequences</h2>
                 <p className="text-gray-700 whitespace-pre-wrap">{record.consequences}</p>
               </div>
             )}
@@ -214,7 +222,7 @@ function RecordDetailPage() {
             {/* Tradeoffs */}
             {record.tradeoffs && (
               <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-3">Tradeoffs</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-3" title="What is explicitly being given up. Makes costs intentional so future teams know pain points are by design.">Tradeoffs</h2>
                 <p className="text-gray-700 whitespace-pre-wrap">{record.tradeoffs}</p>
               </div>
             )}
@@ -222,7 +230,7 @@ function RecordDetailPage() {
             {/* Evidence */}
             {record.evidence && (
               <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-3">Evidence</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-3" title="Links to resources (papers, blogs, benchmarks, experiments) that support and defend the decision.">Evidence</h2>
                 <p className="text-gray-700 whitespace-pre-wrap">{record.evidence}</p>
               </div>
             )}
@@ -230,8 +238,16 @@ function RecordDetailPage() {
             {/* Options Considered */}
             {record.options_considered && (
               <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-3">Options Considered</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-3" title="Alternatives that were evaluated and why they were rejected. Prevents re-proposing already-rejected ideas.">Options Considered</h2>
                 <p className="text-gray-700 whitespace-pre-wrap">{record.options_considered}</p>
+              </div>
+            )}
+
+            {/* Code Reference */}
+            {record.code_reference && (
+              <div className="bg-slate-50 rounded-lg shadow-md p-6 border border-slate-200">
+                <h2 className="text-lg font-semibold text-gray-900 mb-3" title="References to implemented code: file paths, line ranges, and code snippets that highlight where the decision is implemented.">Code Reference</h2>
+                <pre className="text-gray-700 whitespace-pre-wrap font-mono text-sm overflow-x-auto">{record.code_reference}</pre>
               </div>
             )}
           </div>
@@ -355,6 +371,29 @@ function RecordDetailPage() {
                 </div>
               </dl>
             </div>
+
+            {/* VCS Info */}
+            {record.metadata?.vcs && (
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                  </svg>
+                  <span>Version Control</span>
+                </h2>
+                <dl className="space-y-2 text-sm">
+                  <div>
+                    <dt className="text-gray-500">VCS Type</dt>
+                    <dd className="text-gray-900 capitalize">{record.metadata.vcs.type}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-gray-500">Revision</dt>
+                    <dd className="text-gray-900 font-mono text-xs break-all">{record.metadata.vcs.revision}</dd>
+                  </div>
+                </dl>
+              </div>
+            )}
           </div>
         </div>
       )}

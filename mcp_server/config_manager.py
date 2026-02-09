@@ -6,6 +6,7 @@ Manages workspace-specific project configuration stored in .curio-decision/confi
 
 import json
 import os
+import subprocess
 from pathlib import Path
 from typing import Optional, Dict
 import logging
@@ -112,3 +113,46 @@ class ConfigManager:
         except Exception as e:
             logger.error(f"Error updating config file: {e}")
             return False
+
+    def get_vcs_metadata(self) -> Optional[Dict]:
+        """
+        Detect version control system and capture current revision info.
+        
+        Returns a metadata dict like:
+            {"vcs": {"type": "git", "revision": "abc123..."}}
+        or None if no VCS is detected.
+        """
+        vcs_info = self._detect_git()
+        if vcs_info:
+            return {"vcs": vcs_info}
+        
+        # Future: add detection for other VCS (hg, svn, etc.)
+        return None
+    
+    def _detect_git(self) -> Optional[Dict]:
+        """
+        Detect if workspace is a git repository and get the current commit hash.
+        
+        Returns:
+            {"type": "git", "revision": "<commit hash>"} or None
+        """
+        try:
+            # Check if git is available and workspace is a git repo
+            result = subprocess.run(
+                ['git', 'rev-parse', 'HEAD'],
+                capture_output=True,
+                text=True,
+                cwd=str(self.workspace_root),
+                timeout=5
+            )
+            if result.returncode == 0:
+                revision = result.stdout.strip()
+                if revision:
+                    return {
+                        "type": "git",
+                        "revision": revision
+                    }
+        except (FileNotFoundError, subprocess.TimeoutExpired, OSError) as e:
+            logger.debug(f"Git detection failed: {e}")
+        
+        return None

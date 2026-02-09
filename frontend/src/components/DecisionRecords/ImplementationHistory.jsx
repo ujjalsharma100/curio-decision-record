@@ -239,6 +239,15 @@ function ImplementationHistory({ decisionId }) {
                               </div>
                             )}
 
+                            {impl.code_reference && (
+                              <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                <h5 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                                  Code Reference
+                                </h5>
+                                <pre className="text-sm text-gray-700 font-mono whitespace-pre-wrap overflow-x-auto">{impl.code_reference}</pre>
+                              </div>
+                            )}
+
                             {/* Superseded by relationship */}
                             {impl.outgoing_relationships?.some(r => r.relationship_type === 'superseded_by') && (
                               <div className="flex items-center text-sm text-indigo-600">

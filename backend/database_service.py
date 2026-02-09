@@ -350,21 +350,27 @@ class DatabaseService:
     
     def create_decision_record(self, record_data: Dict) -> Dict:
         """Create a new decision record."""
+        import json as _json
         with self.get_connection() as conn:
             with conn.cursor() as cursor:
+                metadata_value = record_data.get('metadata')
+                if metadata_value is not None and isinstance(metadata_value, dict):
+                    metadata_value = _json.dumps(metadata_value)
                 cursor.execute("""
                     INSERT INTO decision_records (
                         id, decision_id, context, constraints, decision_description,
-                        status, rationale, assumptions, consequences, tradeoffs,
-                        evidence, options_considered, version
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        decision_details, status, rationale, assumptions, consequences, tradeoffs,
+                        evidence, options_considered, code_reference, metadata, version
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (
                     record_data['id'], record_data['decision_id'],
                     record_data.get('context'), record_data.get('constraints'),
-                    record_data['decision_description'], record_data.get('status', 'proposed'),
+                    record_data['decision_description'], record_data.get('decision_details'),
+                    record_data.get('status', 'proposed'),
                     record_data.get('rationale'), record_data.get('assumptions'),
                     record_data.get('consequences'), record_data.get('tradeoffs'),
                     record_data.get('evidence'), record_data.get('options_considered'),
+                    record_data.get('code_reference'), metadata_value,
                     record_data.get('version', 1)
                 ))
                 conn.commit()
@@ -400,20 +406,28 @@ class DatabaseService:
     
     def update_decision_record(self, record_id: str, record_data: Dict) -> Dict:
         """Update a decision record."""
+        import json as _json
         with self.get_connection() as conn:
             with conn.cursor() as cursor:
                 updates = []
                 params = []
                 
                 updatable_fields = [
-                    'context', 'constraints', 'decision_description', 'rationale',
-                    'assumptions', 'consequences', 'tradeoffs', 'evidence', 'options_considered'
+                    'context', 'constraints', 'decision_description', 'decision_details', 'rationale',
+                    'assumptions', 'consequences', 'tradeoffs', 'evidence', 'options_considered', 'code_reference'
                 ]
                 
                 for field in updatable_fields:
                     if field in record_data:
                         updates.append(f"{field} = %s")
                         params.append(record_data[field])
+                
+                if 'metadata' in record_data:
+                    updates.append("metadata = %s")
+                    metadata_value = record_data['metadata']
+                    if metadata_value is not None and isinstance(metadata_value, dict):
+                        metadata_value = _json.dumps(metadata_value)
+                    params.append(metadata_value)
                 
                 if 'version' in record_data:
                     updates.append("version = %s")

@@ -118,14 +118,16 @@ function VersionHistory({ recordId, currentVersion, onViewVersion, onRevert }) {
 
             <div className="space-y-4">
               <SnapshotField label="Decision Description" value={viewingSnapshot.decision_description} />
-              <SnapshotField label="Context" value={viewingSnapshot.context} />
-              <SnapshotField label="Constraints" value={viewingSnapshot.constraints} />
-              <SnapshotField label="Rationale" value={viewingSnapshot.rationale} />
-              <SnapshotField label="Assumptions" value={viewingSnapshot.assumptions} highlight />
-              <SnapshotField label="Consequences" value={viewingSnapshot.consequences} />
-              <SnapshotField label="Tradeoffs" value={viewingSnapshot.tradeoffs} />
-              <SnapshotField label="Evidence" value={viewingSnapshot.evidence} />
-              <SnapshotField label="Options Considered" value={viewingSnapshot.options_considered} />
+              <SnapshotField label="Decision Details" value={viewingSnapshot.decision_details} title="Detailed explanation of the decision. Elaborates on the decision description with implementation specifics, examples, or additional context." />
+              <SnapshotField label="Context" value={viewingSnapshot.context} title="Why this decision is being made now. The background situation, pressure, or trigger that necessitates it." />
+              <SnapshotField label="Constraints" value={viewingSnapshot.constraints} title="Hard requirements or limitations that must be satisfied. Explains why certain obvious options weren't viable." />
+              <SnapshotField label="Rationale" value={viewingSnapshot.rationale} title="Why this specific option was chosen over alternatives. The reasoning and justification." />
+              <SnapshotField label="Assumptions" value={viewingSnapshot.assumptions} highlight title="Things that must remain true for this decision to stay valid. When assumptions break or expire, the decision should be re-evaluated." />
+              <SnapshotField label="Consequences" value={viewingSnapshot.consequences} title="Downstream impact, both positive and negative. What it will cause, enable, or require going forward." />
+              <SnapshotField label="Tradeoffs" value={viewingSnapshot.tradeoffs} title="What is explicitly being given up. Makes costs intentional so future teams know pain points are by design." />
+              <SnapshotField label="Evidence" value={viewingSnapshot.evidence} title="Links to resources (papers, blogs, benchmarks, experiments) that support and defend the decision." />
+              <SnapshotField label="Options Considered" value={viewingSnapshot.options_considered} title="Alternatives that were evaluated and why they were rejected. Prevents re-proposing already-rejected ideas." />
+              <SnapshotField label="Code Reference" value={viewingSnapshot.code_reference} title="References to implemented code: file paths, line ranges (e.g. src/utils.py:42-58), and code snippets." code />
             </div>
 
             <div className="mt-6 flex justify-end space-x-3">
@@ -158,15 +160,18 @@ function VersionHistory({ recordId, currentVersion, onViewVersion, onRevert }) {
   );
 }
 
-function SnapshotField({ label, value, highlight = false }) {
+function SnapshotField({ label, value, highlight = false, title, code = false }) {
   if (!value) return null;
 
+  const wrapperClass = highlight ? 'bg-amber-50 p-3 rounded-lg border border-amber-200' : (code ? 'bg-slate-50 p-3 rounded-lg border border-slate-200' : '');
+  const contentClass = `text-sm whitespace-pre-wrap ${highlight ? 'text-amber-900' : code ? 'text-gray-700 font-mono' : 'text-gray-600'}`;
+
   return (
-    <div className={highlight ? 'bg-amber-50 p-3 rounded-lg border border-amber-200' : ''}>
-      <h4 className={`text-sm font-medium ${highlight ? 'text-amber-800' : 'text-gray-700'} mb-1`}>
+    <div className={wrapperClass}>
+      <h4 className={`text-sm font-medium ${highlight ? 'text-amber-800' : 'text-gray-700'} mb-1`} title={title}>
         {label}
       </h4>
-      <p className={`text-sm ${highlight ? 'text-amber-900' : 'text-gray-600'} whitespace-pre-wrap`}>
+      <p className={contentClass}>
         {value}
       </p>
     </div>

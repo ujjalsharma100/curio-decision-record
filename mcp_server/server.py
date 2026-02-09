@@ -58,6 +58,16 @@ def get_project_name_from_args(args: dict) -> Optional[str]:
     return project_name
 
 
+def build_metadata() -> Optional[dict]:
+    """
+    Build metadata dict by auto-detecting VCS information from the workspace.
+    
+    Returns metadata like {"vcs": {"type": "git", "revision": "abc123..."}}
+    or None if no VCS is detected.
+    """
+    return config_manager.get_vcs_metadata()
+
+
 @app.list_tools()
 async def list_tools() -> list[Tool]:
     """List all available tools."""
@@ -195,35 +205,47 @@ async def list_tools() -> list[Tool]:
                     },
                     "context": {
                         "type": "string",
-                        "description": "Context in which the decision was made"
+                        "description": "Why this decision is being made now. The background situation, pressure, or trigger that necessitates it. Helps future readers understand the circumstances, not just the logic."
                     },
                     "constraints": {
                         "type": "string",
-                        "description": "Constraints that influenced the decision"
+                        "description": "Hard requirements or limitations that must be satisfied. These explain why certain 'obvious' options weren't viable (e.g., must use Python ecosystem, latency limits, compatibility with existing backend)."
+                    },
+                    "decision_details": {
+                        "type": "string",
+                        "description": "Detailed explanation of the decision. Elaborates on the decision description with implementation specifics, examples, or additional context."
                     },
                     "rationale": {
                         "type": "string",
-                        "description": "Rationale for the decision"
+                        "description": "Why this specific option was chosen over alternatives. The reasoning and justification behind the decision."
                     },
                     "assumptions": {
                         "type": "string",
-                        "description": "Assumptions made"
+                        "description": "Things that must remain true for this decision to stay valid. When assumptions break or expire, the decision should be re-evaluated. Critical for assessing ongoing validity."
                     },
                     "consequences": {
                         "type": "string",
-                        "description": "Expected consequences"
+                        "description": "Downstream impact of this decision, both positive and negative. What it will cause, enable, or require going forward."
                     },
                     "tradeoffs": {
                         "type": "string",
-                        "description": "Tradeoffs considered"
+                        "description": "What is explicitly being given up by choosing this option. Makes costs intentional and visible so future teams know pain points are by design, not accident."
                     },
                     "evidence": {
                         "type": "string",
-                        "description": "Evidence supporting the decision"
+                        "description": "Links to resources (papers, blogs, benchmarks, experiments, documents) that support and defend the decision. Builds credibility and auditability."
                     },
                     "options_considered": {
                         "type": "string",
-                        "description": "Other options that were considered"
+                        "description": "Alternatives that were evaluated and why they were rejected. Prevents future teams from re-proposing already-rejected ideas and enables counterfactual analysis."
+                    },
+                    "code_reference": {
+                        "type": "string",
+                        "description": "References to implemented code: file paths, line ranges (e.g. src/utils.py:42-58), and code snippets that highlight where the decision is implemented."
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "description": "Optional metadata (auto-captured if not provided). Includes VCS info like {\"vcs\": {\"type\": \"git\", \"revision\": \"commit_hash\"}}. Automatically detected from the workspace if the project is version controlled."
                     }
                 },
                 "required": ["decision_title", "decision_description"]
@@ -455,35 +477,47 @@ async def list_tools() -> list[Tool]:
                     },
                     "context": {
                         "type": "string",
-                        "description": "Updated context"
+                        "description": "Why this decision is being made now. The background situation, pressure, or trigger that necessitates it. Helps future readers understand the circumstances, not just the logic."
                     },
                     "constraints": {
                         "type": "string",
-                        "description": "Updated constraints"
+                        "description": "Hard requirements or limitations that must be satisfied. These explain why certain 'obvious' options weren't viable (e.g., must use Python ecosystem, latency limits, compatibility with existing backend)."
+                    },
+                    "decision_details": {
+                        "type": "string",
+                        "description": "Detailed explanation of the decision. Elaborates on the decision description with implementation specifics, examples, or additional context."
                     },
                     "rationale": {
                         "type": "string",
-                        "description": "Updated rationale"
+                        "description": "Why this specific option was chosen over alternatives. The reasoning and justification behind the decision."
                     },
                     "assumptions": {
                         "type": "string",
-                        "description": "Updated assumptions"
+                        "description": "Things that must remain true for this decision to stay valid. When assumptions break or expire, the decision should be re-evaluated. Critical for assessing ongoing validity."
                     },
                     "consequences": {
                         "type": "string",
-                        "description": "Updated consequences"
+                        "description": "Downstream impact of this decision, both positive and negative. What it will cause, enable, or require going forward."
                     },
                     "tradeoffs": {
                         "type": "string",
-                        "description": "Updated tradeoffs"
+                        "description": "What is explicitly being given up by choosing this option. Makes costs intentional and visible so future teams know pain points are by design, not accident."
                     },
                     "evidence": {
                         "type": "string",
-                        "description": "Updated evidence"
+                        "description": "Links to resources (papers, blogs, benchmarks, experiments, documents) that support and defend the decision. Builds credibility and auditability."
                     },
                     "options_considered": {
                         "type": "string",
-                        "description": "Updated options considered"
+                        "description": "Alternatives that were evaluated and why they were rejected. Prevents future teams from re-proposing already-rejected ideas and enables counterfactual analysis."
+                    },
+                    "code_reference": {
+                        "type": "string",
+                        "description": "References to implemented code: file paths, line ranges (e.g. src/utils.py:42-58), and code snippets that highlight where the decision is implemented."
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "description": "Optional metadata (auto-captured if not provided). Includes VCS info like {\"vcs\": {\"type\": \"git\", \"revision\": \"commit_hash\"}}. Automatically detected from the workspace if the project is version controlled."
                     }
                 },
                 "required": ["decision_title", "decision_description"]
@@ -670,19 +704,27 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                     }, indent=2)
                 )]
             
+            # Auto-capture metadata (VCS info) if not explicitly provided
+            metadata = arguments.get("metadata")
+            if metadata is None:
+                metadata = build_metadata()
+            
             record = api_client.create_record_by_names(
                 project_name=project_name,
                 decision_title=decision_title,
                 decision_description=decision_description,
                 context=arguments.get("context"),
                 constraints=arguments.get("constraints"),
+                decision_details=arguments.get("decision_details"),
+                code_reference=arguments.get("code_reference"),
                 status=status,
                 rationale=arguments.get("rationale"),
                 assumptions=arguments.get("assumptions"),
                 consequences=arguments.get("consequences"),
                 tradeoffs=arguments.get("tradeoffs"),
                 evidence=arguments.get("evidence"),
-                options_considered=arguments.get("options_considered")
+                options_considered=arguments.get("options_considered"),
+                metadata=metadata
             )
             
             return [TextContent(
@@ -1064,18 +1106,26 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                     }, indent=2)
                 )]
             
+            # Auto-capture metadata (VCS info) if not explicitly provided
+            metadata = arguments.get("metadata")
+            if metadata is None:
+                metadata = build_metadata()
+            
             record = api_client.update_record_by_description(
                 project_name=project_name,
                 decision_title=decision_title,
                 decision_description=decision_description,
                 context=arguments.get("context"),
                 constraints=arguments.get("constraints"),
+                decision_details=arguments.get("decision_details"),
                 rationale=arguments.get("rationale"),
                 assumptions=arguments.get("assumptions"),
                 consequences=arguments.get("consequences"),
                 tradeoffs=arguments.get("tradeoffs"),
                 evidence=arguments.get("evidence"),
-                options_considered=arguments.get("options_considered")
+                options_considered=arguments.get("options_considered"),
+                code_reference=arguments.get("code_reference"),
+                metadata=metadata
             )
             
             return [TextContent(

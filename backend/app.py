@@ -301,13 +301,16 @@ def create_record(decision_id):
             decision_description=data['decision_description'],
             context=data.get('context'),
             constraints=data.get('constraints'),
+            decision_details=data.get('decision_details'),
             status=data.get('status'),
             rationale=data.get('rationale'),
             assumptions=data.get('assumptions'),
             consequences=data.get('consequences'),
             tradeoffs=data.get('tradeoffs'),
             evidence=data.get('evidence'),
-            options_considered=data.get('options_considered')
+            options_considered=data.get('options_considered'),
+            code_reference=data.get('code_reference'),
+            metadata=data.get('metadata')
         )
         return jsonify(record), 201
     except ValueError as e:
@@ -347,12 +350,15 @@ def update_record(record_id):
             context=data.get('context'),
             constraints=data.get('constraints'),
             decision_description=data.get('decision_description'),
+            decision_details=data.get('decision_details'),
             rationale=data.get('rationale'),
             assumptions=data.get('assumptions'),
             consequences=data.get('consequences'),
             tradeoffs=data.get('tradeoffs'),
             evidence=data.get('evidence'),
-            options_considered=data.get('options_considered')
+            options_considered=data.get('options_considered'),
+            code_reference=data.get('code_reference'),
+            metadata=data.get('metadata')
         )
         if not record:
             return jsonify({'error': 'Record not found'}), 404
@@ -740,13 +746,16 @@ def create_record_by_names_mcp(project_name, decision_title):
             decision_description=data['decision_description'],
             context=data.get('context'),
             constraints=data.get('constraints'),
+            decision_details=data.get('decision_details'),
             status=data.get('status'),
             rationale=data.get('rationale'),
             assumptions=data.get('assumptions'),
             consequences=data.get('consequences'),
             tradeoffs=data.get('tradeoffs'),
             evidence=data.get('evidence'),
-            options_considered=data.get('options_considered')
+            options_considered=data.get('options_considered'),
+            code_reference=data.get('code_reference'),
+            metadata=data.get('metadata')
         )
         return jsonify(record), 201
     except ValueError as e:
@@ -783,12 +792,15 @@ def update_record_by_description_mcp(project_name, decision_title, decision_desc
             decision_description=decision_description,
             context=data.get('context'),
             constraints=data.get('constraints'),
+            decision_details=data.get('decision_details'),
             rationale=data.get('rationale'),
             assumptions=data.get('assumptions'),
             consequences=data.get('consequences'),
             tradeoffs=data.get('tradeoffs'),
             evidence=data.get('evidence'),
-            options_considered=data.get('options_considered')
+            options_considered=data.get('options_considered'),
+            code_reference=data.get('code_reference'),
+            metadata=data.get('metadata')
         )
         return jsonify(record)
     except ValueError as e:

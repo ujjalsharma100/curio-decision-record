@@ -19,14 +19,16 @@ Each decision record captures:
 | Field | Description |
 |-------|-------------|
 | **Decision Description** | The actual decision being made |
-| **Context** | Why now? What prompted this decision? |
-| **Constraints** | Requirements that must be met |
-| **Rationale** | Why this choice was made |
-| **Assumptions** | Critical beliefs that must hold true (key for validation) |
-| **Consequences** | Positive and negative impacts |
-| **Tradeoffs** | What's being given up |
-| **Evidence** | Links, resources, benchmarks supporting the decision |
-| **Options Considered** | Alternatives and why they were not chosen |
+| **Decision Details** | Detailed explanation of the decision. Elaborates on the decision description with implementation specifics, examples, or additional context. |
+| **Context** | Why this decision is being made now. The background situation, pressure, or trigger that necessitates it. Helps future readers understand the circumstances. |
+| **Constraints** | Hard requirements or limitations that must be satisfied. Explains why certain "obvious" options weren't viable (e.g., must use Python ecosystem, latency limits). |
+| **Rationale** | Why this specific option was chosen over alternatives. The reasoning and justification behind the decision. |
+| **Assumptions** | Things that must remain true for this decision to stay valid. When assumptions break or expire, the decision should be re-evaluated. Critical for assessing ongoing validity. |
+| **Consequences** | Downstream impact of this decision, both positive and negative. What it will cause, enable, or require going forward. |
+| **Tradeoffs** | What is explicitly being given up by choosing this option. Makes costs intentional so future teams know pain points are by design, not accident. |
+| **Evidence** | Links to resources (papers, blogs, benchmarks, experiments) that support and defend the decision. Builds credibility and auditability. |
+| **Options Considered** | Alternatives that were evaluated and why they were rejected. Prevents future teams from re-proposing already-rejected ideas. |
+| **Code Reference** | References to implemented code: file paths, line ranges (e.g. src/utils.py:42-58), and code snippets that highlight where the decision is implemented. |
 
 ## Status Workflow
 

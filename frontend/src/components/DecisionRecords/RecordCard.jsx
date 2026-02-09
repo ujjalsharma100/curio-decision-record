@@ -103,30 +103,37 @@ function RecordCard({ record, allRecords, currentDecisionTitle, onEdit, onDelete
       {/* Expanded Details */}
       {expanded && (
         <div className="px-4 pb-4 space-y-4 border-t">
+          {record.decision_details && (
+            <div className="pt-4">
+              <h4 className="font-medium text-gray-700 text-sm" title="Detailed explanation of the decision.">Decision Details</h4>
+              <p className="text-gray-600 text-sm mt-1 whitespace-pre-wrap">{record.decision_details}</p>
+            </div>
+          )}
+
           {record.context && (
             <div className="pt-4">
-              <h4 className="font-medium text-gray-700 text-sm">Context</h4>
+              <h4 className="font-medium text-gray-700 text-sm" title="Why this decision is being made now. The background situation, pressure, or trigger that necessitates it.">Context</h4>
               <p className="text-gray-600 text-sm mt-1 whitespace-pre-wrap">{record.context}</p>
             </div>
           )}
 
           {record.constraints && (
             <div>
-              <h4 className="font-medium text-gray-700 text-sm">Constraints</h4>
+              <h4 className="font-medium text-gray-700 text-sm" title="Hard requirements or limitations that must be satisfied. Explains why certain obvious options weren't viable.">Constraints</h4>
               <p className="text-gray-600 text-sm mt-1 whitespace-pre-wrap">{record.constraints}</p>
             </div>
           )}
 
           {record.rationale && (
             <div>
-              <h4 className="font-medium text-gray-700 text-sm">Rationale</h4>
+              <h4 className="font-medium text-gray-700 text-sm" title="Why this specific option was chosen over alternatives. The reasoning and justification.">Rationale</h4>
               <p className="text-gray-600 text-sm mt-1 whitespace-pre-wrap">{record.rationale}</p>
             </div>
           )}
 
           {record.assumptions && (
             <div className="bg-amber-50 p-3 rounded-lg border border-amber-200">
-              <h4 className="font-medium text-amber-800 text-sm flex items-center space-x-1">
+              <h4 className="font-medium text-amber-800 text-sm flex items-center space-x-1" title="Things that must remain true for this decision to stay valid. When assumptions break or expire, the decision should be re-evaluated.">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                     d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -139,29 +146,59 @@ function RecordCard({ record, allRecords, currentDecisionTitle, onEdit, onDelete
 
           {record.consequences && (
             <div>
-              <h4 className="font-medium text-gray-700 text-sm">Consequences</h4>
+              <h4 className="font-medium text-gray-700 text-sm" title="Downstream impact, both positive and negative. What it will cause, enable, or require going forward.">Consequences</h4>
               <p className="text-gray-600 text-sm mt-1 whitespace-pre-wrap">{record.consequences}</p>
             </div>
           )}
 
           {record.tradeoffs && (
             <div>
-              <h4 className="font-medium text-gray-700 text-sm">Tradeoffs</h4>
+              <h4 className="font-medium text-gray-700 text-sm" title="What is explicitly being given up. Makes costs intentional so future teams know pain points are by design.">Tradeoffs</h4>
               <p className="text-gray-600 text-sm mt-1 whitespace-pre-wrap">{record.tradeoffs}</p>
             </div>
           )}
 
           {record.evidence && (
             <div>
-              <h4 className="font-medium text-gray-700 text-sm">Evidence</h4>
+              <h4 className="font-medium text-gray-700 text-sm" title="Links to resources (papers, blogs, benchmarks, experiments) that support and defend the decision.">Evidence</h4>
               <p className="text-gray-600 text-sm mt-1 whitespace-pre-wrap">{record.evidence}</p>
             </div>
           )}
 
           {record.options_considered && (
             <div>
-              <h4 className="font-medium text-gray-700 text-sm">Options Considered</h4>
+              <h4 className="font-medium text-gray-700 text-sm" title="Alternatives that were evaluated and why they were rejected. Prevents re-proposing already-rejected ideas.">Options Considered</h4>
               <p className="text-gray-600 text-sm mt-1 whitespace-pre-wrap">{record.options_considered}</p>
+            </div>
+          )}
+
+          {record.code_reference && (
+            <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+              <h4 className="font-medium text-slate-700 text-sm" title="References to implemented code: file paths, line ranges, and code snippets.">Code Reference</h4>
+              <pre className="text-slate-700 text-sm mt-1 whitespace-pre-wrap font-mono overflow-x-auto">{record.code_reference}</pre>
+            </div>
+          )}
+
+          {/* VCS Info */}
+          {record.metadata?.vcs && (
+            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+              <h4 className="font-medium text-gray-700 text-sm flex items-center space-x-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                </svg>
+                <span>Version Control</span>
+              </h4>
+              <div className="text-sm mt-1 space-y-1">
+                <div className="flex items-center space-x-2">
+                  <span className="text-gray-500">Type:</span>
+                  <span className="text-gray-700 capitalize">{record.metadata.vcs.type}</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-gray-500">Revision:</span>
+                  <span className="text-gray-700 font-mono text-xs">{record.metadata.vcs.revision?.substring(0, 12)}...</span>
+                </div>
+              </div>
             </div>
           )}
 

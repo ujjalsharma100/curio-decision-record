@@ -141,25 +141,29 @@ class CurioDecisionAPIClient:
     def create_record(self, decision_id: str, decision_description: str,
                      context: Optional[str] = None,
                      constraints: Optional[str] = None,
+                     decision_details: Optional[str] = None,
                      status: Optional[str] = None,
                      rationale: Optional[str] = None,
                      assumptions: Optional[str] = None,
                      consequences: Optional[str] = None,
                      tradeoffs: Optional[str] = None,
                      evidence: Optional[str] = None,
-                     options_considered: Optional[str] = None) -> Dict:
+                     options_considered: Optional[str] = None,
+                     code_reference: Optional[str] = None) -> Dict:
         """Create a new decision record."""
         data = {
             'decision_description': decision_description,
             'context': context,
             'constraints': constraints,
+            'decision_details': decision_details,
             'status': status,
             'rationale': rationale,
             'assumptions': assumptions,
             'consequences': consequences,
             'tradeoffs': tradeoffs,
             'evidence': evidence,
-            'options_considered': options_considered
+            'options_considered': options_considered,
+            'code_reference': code_reference
         }
         # Remove None values
         data = {k: v for k, v in data.items() if v is not None}
@@ -173,23 +177,27 @@ class CurioDecisionAPIClient:
                      context: Optional[str] = None,
                      constraints: Optional[str] = None,
                      decision_description: Optional[str] = None,
+                     decision_details: Optional[str] = None,
                      rationale: Optional[str] = None,
                      assumptions: Optional[str] = None,
                      consequences: Optional[str] = None,
                      tradeoffs: Optional[str] = None,
                      evidence: Optional[str] = None,
-                     options_considered: Optional[str] = None) -> Dict:
+                     options_considered: Optional[str] = None,
+                     code_reference: Optional[str] = None) -> Dict:
         """Update a decision record."""
         data = {
             'context': context,
             'constraints': constraints,
             'decision_description': decision_description,
+            'decision_details': decision_details,
             'rationale': rationale,
             'assumptions': assumptions,
             'consequences': consequences,
             'tradeoffs': tradeoffs,
             'evidence': evidence,
-            'options_considered': options_considered
+            'options_considered': options_considered,
+            'code_reference': code_reference
         }
         # Remove None values
         data = {k: v for k, v in data.items() if v is not None}
@@ -308,25 +316,31 @@ class CurioDecisionAPIClient:
                               decision_description: str,
                               context: Optional[str] = None,
                               constraints: Optional[str] = None,
+                              decision_details: Optional[str] = None,
+                              code_reference: Optional[str] = None,
                               status: Optional[str] = None,
                               rationale: Optional[str] = None,
                               assumptions: Optional[str] = None,
                               consequences: Optional[str] = None,
                               tradeoffs: Optional[str] = None,
                               evidence: Optional[str] = None,
-                              options_considered: Optional[str] = None) -> Dict:
+                              options_considered: Optional[str] = None,
+                              metadata: Optional[Dict] = None) -> Dict:
         """Create a decision record by project name and decision title (MCP endpoint)."""
         data = {
             'decision_description': decision_description,
             'context': context,
             'constraints': constraints,
+            'decision_details': decision_details,
+            'code_reference': code_reference,
             'status': status,
             'rationale': rationale,
             'assumptions': assumptions,
             'consequences': consequences,
             'tradeoffs': tradeoffs,
             'evidence': evidence,
-            'options_considered': options_considered
+            'options_considered': options_considered,
+            'metadata': metadata
         }
         # Remove None values
         data = {k: v for k, v in data.items() if v is not None}
@@ -344,24 +358,30 @@ class CurioDecisionAPIClient:
                                      decision_description: str,
                                      context: Optional[str] = None,
                                      constraints: Optional[str] = None,
+                                     decision_details: Optional[str] = None,
+                                     code_reference: Optional[str] = None,
                                      rationale: Optional[str] = None,
                                      assumptions: Optional[str] = None,
                                      consequences: Optional[str] = None,
                                      tradeoffs: Optional[str] = None,
                                      evidence: Optional[str] = None,
-                                     options_considered: Optional[str] = None) -> Dict:
+                                     options_considered: Optional[str] = None,
+                                     metadata: Optional[Dict] = None) -> Dict:
         """Update a decision record by project name, decision title, and description (MCP endpoint)."""
         from urllib.parse import quote
         encoded_description = quote(decision_description, safe='')
         data = {
             'context': context,
             'constraints': constraints,
+            'decision_details': decision_details,
+            'code_reference': code_reference,
             'rationale': rationale,
             'assumptions': assumptions,
             'consequences': consequences,
             'tradeoffs': tradeoffs,
             'evidence': evidence,
-            'options_considered': options_considered
+            'options_considered': options_considered,
+            'metadata': metadata
         }
         # Remove None values
         data = {k: v for k, v in data.items() if v is not None}
