@@ -12,6 +12,7 @@ export const projectsApi = {
   list: () => api.get('/projects'),
   get: (id) => api.get(`/projects/${id}`),
   getRecords: (projectId) => api.get(`/projects/${projectId}/records`),
+  getActionItems: (projectId) => api.get(`/projects/${projectId}/action-items`),
   create: (data) => api.post('/projects', data),
   update: (id, data) => api.put(`/projects/${id}`, data),
   delete: (id) => api.delete(`/projects/${id}`),

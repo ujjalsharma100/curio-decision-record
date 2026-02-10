@@ -103,6 +103,21 @@ def list_project_records(project_id):
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/projects/<project_id>/action-items', methods=['GET'])
+def get_project_action_items(project_id):
+    """
+    Get action items for a project.
+    Returns decisions needing review (proposed records) and
+    decisions pending implementation (accepted records).
+    """
+    try:
+        action_items = decision_service.get_project_action_items(project_id)
+        return jsonify(action_items)
+    except Exception as e:
+        logger.error(f"Error getting project action items: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/projects/<project_id>', methods=['DELETE'])
 def delete_project(project_id):
     """Delete a project."""

@@ -73,6 +73,20 @@ Every decision record is automatically version-controlled:
 
 Note: Status changes are tracked separately in the Status History and don't increment the version number.
 
+## Agent Workflows
+
+Curio provides 4 high-level workflows for coding agents to use via the MCP server. These are available as:
+- **MCP Prompts** (Claude Code, VS Code, and any MCP-supporting client)
+- **Cursor Commands** (`.cursor/commands/`) invoked as `/curio-*`
+- **Claude Code Commands** (`.claude/commands/`) invoked as `/project:curio-*`
+
+| Workflow | Description | How to invoke |
+|----------|-------------|---------------|
+| **Initialize & Infer** | Analyze the codebase and create `implemented_inferred` decision records for existing architectural choices | MCP prompt: `initialize_decisions` / Cursor: `/curio-initialize-decisions` / Claude Code: `/project:curio-initialize-decisions` |
+| **Analyze & Propose** | Analyze codebase + existing decisions, optionally with resources and goals, then propose new decisions | MCP prompt: `analyze_and_propose` / Cursor: `/curio-analyze-and-propose` / Claude Code: `/project:curio-analyze-and-propose` |
+| **Evaluate Decisions** | Audit the codebase against decisions — update statuses, flag invalidated assumptions | MCP prompt: `evaluate_decisions` / Cursor: `/curio-evaluate-decisions` / Claude Code: `/project:curio-evaluate-decisions` |
+| **Implement Decision** | Take an accepted decision and implement it in code, then update its status | MCP prompt: `implement_decision` / Cursor: `/curio-implement-decision` / Claude Code: `/project:curio-implement-decision` |
+
 ## Tech Stack
 
 - **Backend**: Flask (Python) with psycopg2 for PostgreSQL
@@ -105,6 +119,8 @@ See [docs/API.md](docs/API.md) for the complete API reference.
 
 ```
 curio-decision-record/
+├── .cursor/commands/          # Cursor slash commands for workflows
+├── .claude/commands/          # Claude Code slash commands
 ├── backend/
 │   ├── sql/                  # SQL schema files
 │   ├── app.py                # Flask app and routes
@@ -119,6 +135,11 @@ curio-decision-record/
 │   │   ├── pages/            # Page components
 │   │   └── services/         # API client
 │   └── package.json
+├── mcp_server/
+│   ├── server.py             # MCP server (tools + workflow prompts)
+│   ├── api_client.py         # HTTP client for backend
+│   ├── config_manager.py     # Workspace config management
+│   └── setup_env.py          # Venv setup script
 └── docs/
     ├── API.md
     └── RUNNING.md

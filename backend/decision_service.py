@@ -145,6 +145,39 @@ class DecisionService:
                 record['decision_title'] = decision.get('title', '')
                 all_records.append(record)
         return all_records
+
+    def get_project_action_items(self, project_id: str) -> Dict:
+        """
+        Get action items for a project: decisions needing review (proposed records)
+        and decisions pending implementation (accepted records).
+        
+        Returns:
+            Dict with 'review' and 'pending_implementation' lists.
+        """
+        decisions = self.db.get_decisions_by_project(project_id)
+        review_items = []
+        pending_items = []
+
+        for decision in decisions:
+            records = self.db.get_decision_records_by_decision(decision['id'])
+            proposed_records = [r for r in records if r.get('status') == 'proposed']
+            accepted_records = [r for r in records if r.get('status') == 'accepted']
+
+            if proposed_records:
+                review_items.append({
+                    'decision': decision,
+                    'records': proposed_records,
+                })
+            if accepted_records:
+                pending_items.append({
+                    'decision': decision,
+                    'record': accepted_records[0],  # Only one accepted per decision
+                })
+
+        return {
+            'review': review_items,
+            'pending_implementation': pending_items,
+        }
     
     def update_decision(self, decision_id: str, title: str = None) -> Dict:
         """Update a decision."""

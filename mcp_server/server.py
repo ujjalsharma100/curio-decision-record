@@ -15,7 +15,7 @@ from typing import Optional
 
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
-from mcp.types import Tool, TextContent
+from mcp.types import Tool, TextContent, Prompt, PromptArgument, PromptMessage, GetPromptResult
 
 # Import local modules
 try:
@@ -1145,5 +1145,428 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             type="text",
             text=json.dumps({"error": str(e)}, indent=2)
         )]
+
+
+# ---------------------------------------------------------------------------
+# Prompt definitions — reusable workflow instructions for coding agents
+# ---------------------------------------------------------------------------
+
+WORKFLOW_PROMPTS = {
+    "initialize_decisions": {
+        "prompt": Prompt(
+            name="initialize_decisions",
+            description="Analyze the codebase and create decision records inferred from existing architectural choices. Use this when a project is first set up in Curio and you want to capture decisions that are already reflected in the code.",
+            arguments=[]
+        ),
+        "build": lambda args: _build_initialize_decisions_prompt()
+    },
+    "analyze_and_propose": {
+        "prompt": Prompt(
+            name="analyze_and_propose",
+            description="Analyze the codebase and existing decisions, optionally considering additional resources and goals, then propose new decisions or records where gaps exist.",
+            arguments=[
+                PromptArgument(
+                    name="resources",
+                    description="Optional comma-separated URLs or references to papers, docs, RFCs, or artifacts to consider during analysis.",
+                    required=False
+                ),
+                PromptArgument(
+                    name="intent",
+                    description="Optional goals, direction, or specific areas to focus the analysis on (e.g., 'improve observability', 'prepare for multi-tenancy').",
+                    required=False
+                )
+            ]
+        ),
+        "build": lambda args: _build_analyze_and_propose_prompt(
+            resources=args.get("resources") if args else None,
+            intent=args.get("intent") if args else None
+        )
+    },
+    "evaluate_decisions": {
+        "prompt": Prompt(
+            name="evaluate_decisions",
+            description="Audit the codebase against existing decision records and update statuses where appropriate — mark implemented decisions, deprecate obsolete ones, and flag invalidated assumptions.",
+            arguments=[]
+        ),
+        "build": lambda args: _build_evaluate_decisions_prompt()
+    },
+    "implement_decision": {
+        "prompt": Prompt(
+            name="implement_decision",
+            description="Take an accepted decision and implement it in the codebase, then update its status to implemented.",
+            arguments=[
+                PromptArgument(
+                    name="decision_title",
+                    description="Title of the decision to implement. If omitted, lists all accepted decisions for you to choose from.",
+                    required=False
+                )
+            ]
+        ),
+        "build": lambda args: _build_implement_decision_prompt(
+            decision_title=args.get("decision_title") if args else None
+        )
+    },
+}
+
+
+def _build_initialize_decisions_prompt() -> GetPromptResult:
+    """Build the initialize-decisions workflow prompt."""
+    instructions = """\
+You are performing the **Initialize & Infer Decisions** workflow for the Curio Decision Record system.
+
+Your goal: Analyze this codebase thoroughly and create decision records for every significant architectural or design decision that is already reflected in the code. These are recorded as `implemented_inferred` so the team has a living record of decisions that were made — even if they were never formally documented.
+
+## Step-by-step process
+
+### 1. Verify project setup
+- Call `get_project` to check if a project is already configured for this workspace.
+- If no project exists, call `init_project` with a descriptive name for this codebase.
+
+### 2. Explore the codebase
+Systematically analyze the codebase to identify architectural and design decisions. Look at:
+- **Languages & frameworks**: What languages, frameworks, and runtimes are used? (e.g., Python + Flask, React + Vite)
+- **Database & storage**: What databases, caches, or storage systems are in use? (e.g., PostgreSQL, Redis, S3)
+- **Architecture patterns**: Monolith vs microservices, REST vs GraphQL, MVC vs other patterns
+- **Infrastructure & deployment**: Docker, Kubernetes, serverless, CI/CD pipelines
+- **Authentication & security**: Auth mechanisms, encryption, access control patterns
+- **API design**: REST conventions, versioning strategy, error handling patterns
+- **Testing strategy**: Unit tests, integration tests, E2E tests, testing frameworks
+- **Code organization**: Monorepo vs polyrepo, folder structure conventions, module boundaries
+- **Dependencies**: Key libraries chosen (ORM, HTTP client, logging, etc.) and why those over alternatives
+- **Configuration**: How config is managed (env vars, config files, secrets management)
+
+Read key files like package.json, requirements.txt, Cargo.toml, Dockerfile, docker-compose.yml, CI configs, and entry points to understand what is in use.
+
+### 3. Create decisions and records
+For each significant decision identified:
+1. Call `create_decision` with a clear, descriptive title (e.g., "Use PostgreSQL as primary database", "Adopt Flask for backend API").
+2. Call `create_record` with `status="implemented_inferred"` and fill in as many fields as you can infer:
+
+   - **decision_description**: A concise statement of what was decided.
+   - **context**: Why this decision was likely made — the situation or pressures at the time. Even if you're inferring, reason about what would have motivated this choice.
+   - **constraints**: Hard requirements the decision satisfies (e.g., "Must integrate with existing Python services", "Must support ACID transactions").
+   - **rationale**: Why this option was chosen over alternatives, based on what you can observe in the code and ecosystem.
+   - **assumptions**: What must remain true for this decision to stay valid (e.g., "Team has Python expertise", "Data model remains primarily relational").
+   - **consequences**: Observable impacts — both positive (e.g., "Enables rapid prototyping") and negative (e.g., "Requires PostgreSQL expertise for operations").
+   - **tradeoffs**: What was given up (e.g., "Traded NoSQL flexibility for relational guarantees").
+   - **evidence**: Links to relevant docs, benchmarks, or the specific files/patterns that reveal this decision.
+   - **options_considered**: Plausible alternatives that were likely evaluated (e.g., "MySQL — similar but fewer advanced features", "MongoDB — not suitable for relational data").
+
+### 4. Create relationships
+After creating all decisions, identify relationships between them:
+- Use `manage_decision_relationship` to link related decisions.
+- Common relationships: `depends_on` (one decision requires another), `related_to` (decisions are connected), `derived_from` (one builds on another).
+- Example: "Use React for frontend" `related_to` "Use Vite as build tool".
+
+### 5. Present summary
+After completing all records, present a clear summary:
+- Total number of decisions created
+- For each: title, brief description, and which fields were populated
+- Any relationships created
+- Areas where you were uncertain or where the team should review and refine the inferred records
+
+## Important guidelines
+- **Be thorough**: Capture every significant decision, not just the obvious ones. Infrastructure, testing strategy, and code organization choices are just as important as technology choices.
+- **Be honest about uncertainty**: If you're inferring context or rationale, note that. The team can refine these later.
+- **Quality over quantity for fields**: It's better to leave a field empty than to fill it with vague content. Each field should add real value.
+- **Use implemented_inferred status**: This distinguishes decisions inferred from code vs. ones that went through a formal proposal process.
+"""
+    return GetPromptResult(
+        description="Analyze the codebase and create decision records inferred from existing architectural choices.",
+        messages=[
+            PromptMessage(
+                role="user",
+                content=TextContent(type="text", text=instructions)
+            )
+        ]
+    )
+
+
+def _build_analyze_and_propose_prompt(
+    resources: str | None = None,
+    intent: str | None = None
+) -> GetPromptResult:
+    """Build the analyze-and-propose workflow prompt."""
+    instructions = """\
+You are performing the **Analyze & Propose Decisions** workflow for the Curio Decision Record system.
+
+Your goal: Analyze this codebase alongside all existing decision records, consider any provided resources and goals, then propose new decisions or records where gaps exist or improvements are needed.
+
+## Step-by-step process
+
+### 1. Gather current state
+- Call `get_project` to confirm the workspace project.
+- Call `list_decisions` to retrieve ALL existing decisions and their records.
+- For each decision that looks relevant, call `get_decision` to see full record details.
+- Review the existing decisions carefully — understand what has already been decided, what's proposed, what's accepted, and what's implemented.
+
+### 2. Analyze the codebase
+- Explore the codebase structure, architecture, and implementation patterns.
+- Look for areas where:
+  - Significant decisions exist in code but have no corresponding decision record
+  - Existing decisions may need new alternative records (e.g., a better approach has emerged)
+  - Architectural gaps or risks are not captured in any decision
+  - Implemented decisions have drifted from their documented intent
+"""
+
+    if resources:
+        instructions += f"""
+### 3. Incorporate provided resources
+The user has provided these resources to consider in your analysis:
+**{resources}**
+
+- Read and analyze each resource thoroughly.
+- Understand what they propose, recommend, or demonstrate.
+- Consider how they relate to the current codebase and existing decisions.
+- Use insights from these resources to inform your proposals.
+"""
+    else:
+        instructions += """
+### 3. Consider external context
+No specific resources were provided. Base your analysis on:
+- The codebase itself
+- Existing decision records
+- General best practices for the technologies and patterns in use
+"""
+
+    if intent:
+        instructions += f"""
+### 4. Focus on stated goals
+The user has stated this intent/goal for the analysis:
+**{intent}**
+
+Prioritize your analysis and proposals around this goal. Ensure every proposal clearly ties back to how it supports or relates to this intent.
+"""
+    else:
+        instructions += """
+### 4. General analysis
+No specific intent was provided. Perform a broad analysis looking for:
+- Missing decisions that should be documented
+- Opportunities to improve architecture or address technical debt
+- Risks or assumptions that should be captured
+"""
+
+    instructions += """
+### 5. Propose new decisions and records
+For each gap or improvement identified:
+1. If a new decision topic is needed, call `create_decision` with a clear title.
+2. Call `create_record` with `status="proposed"` and fill ALL fields thoroughly — this is a proposal, quality matters:
+
+   - **decision_description**: A precise statement of what is being proposed.
+   - **context**: Why this decision needs to be made now. What situation, pressure, or trigger necessitates it? Be specific about the current state.
+   - **constraints**: What hard requirements must be met? What limitations exist in the current system?
+   - **rationale**: Why you are recommending this specific approach over alternatives. Be detailed and persuasive.
+   - **assumptions**: What must be true for this proposal to be valid. Be explicit — these are the conditions under which someone should revisit this decision.
+   - **consequences**: What will happen downstream if this is adopted, both good and bad. Be honest about costs.
+   - **tradeoffs**: What is explicitly being given up. Every decision has costs — name them.
+   - **evidence**: Any references that support this proposal — papers, benchmarks, docs, blog posts, or patterns observed in the codebase.
+   - **options_considered**: List every alternative you evaluated and why it was not recommended. This prevents future teams from re-proposing rejected ideas.
+
+3. Use `manage_decision_relationship` to link new proposals to existing decisions where relevant (e.g., `related_to`, `supersedes`, `depends_on`).
+
+### 6. Present proposals
+For each proposal, present:
+- The decision title and proposed record description
+- A brief summary of why this proposal matters
+- Key assumptions that would need to hold
+- Relationship to existing decisions
+
+## Important guidelines
+- **Don't duplicate**: Check existing decisions before proposing. If a decision already covers a topic, consider whether a new record for that decision is more appropriate than a new decision entirely.
+- **Be opinionated but honest**: Propose what you believe is best, but make tradeoffs visible. Don't hide costs.
+- **Assumptions are critical**: The most valuable part of a proposal is often the assumptions — they tell reviewers exactly when this decision should be revisited.
+- **Link everything**: Decisions rarely exist in isolation. Create relationships to show how proposals connect to the existing decision landscape.
+"""
+    return GetPromptResult(
+        description="Analyze the codebase and existing decisions, then propose new decisions or records where gaps exist.",
+        messages=[
+            PromptMessage(
+                role="user",
+                content=TextContent(type="text", text=instructions)
+            )
+        ]
+    )
+
+
+def _build_evaluate_decisions_prompt() -> GetPromptResult:
+    """Build the evaluate-decisions workflow prompt."""
+    instructions = """\
+You are performing the **Evaluate Decisions** workflow for the Curio Decision Record system.
+
+Your goal: Audit the codebase against all existing decision records and update statuses where appropriate. This includes promoting accepted decisions that have been implemented, deprecating decisions no longer reflected in code, and flagging assumptions that may have been invalidated.
+
+## Step-by-step process
+
+### 1. Gather all decisions
+- Call `get_project` to confirm the workspace project.
+- Call `list_decisions` to get ALL decisions.
+- For each decision, call `get_decision` to retrieve full record details including all fields.
+
+### 2. Evaluate accepted records — should any be marked implemented?
+For each record with status `accepted`:
+- Read the decision_description, constraints, and rationale carefully.
+- Search the codebase for evidence that this decision has been implemented.
+- Look for: relevant code files, configuration, dependencies, tests, documentation that match what was decided.
+- **If the decision is clearly implemented in code**: Call `change_record_status` with `status="implemented"` and provide a reason explaining what evidence you found (e.g., "Found PostgreSQL configuration in docker-compose.yml and SQLAlchemy models in backend/models.py").
+- **If partially implemented**: Do NOT change status. Instead, note what is done and what remains.
+
+### 3. Evaluate proposed records — any already implemented?
+For each record with status `proposed`:
+- Check if the proposed change has already been implemented (perhaps by someone who didn't update the record).
+- **If implemented**: Call `change_record_status` to first move to `accepted` then to `implemented`, or note that the workflow requires acceptance first.
+- **If clearly not going to happen**: Consider whether it should be `rejected` and flag it for team review.
+
+### 4. Evaluate implemented records — should any be deprecated?
+For each record with status `implemented` or `implemented_inferred`:
+- Check if the decision is still reflected in the current codebase.
+- Look for: Has the technology been replaced? Has the pattern been abandoned? Has the configuration changed?
+- **If the decision is no longer reflected in code**: Call `change_record_status` with `status="deprecated"` and provide a reason explaining what changed (e.g., "Flask backend has been replaced with FastAPI — see backend/main.py").
+- **If still valid**: Leave as is.
+
+### 5. Evaluate assumptions — are any invalidated?
+This is the most critical evaluation step. For EVERY record (regardless of status):
+- Read the `assumptions` field carefully.
+- For each assumption stated, evaluate whether it still holds true:
+  - Check the codebase for evidence
+  - Consider the current technology landscape
+  - Look for changes that may have invalidated assumptions
+- **If assumptions are invalidated**: Flag the decision prominently. This does not automatically change status, but it means the decision should be reviewed. Use `update_decision_record` to add a note in the context or use the relationship tools to flag it.
+
+### 6. Present evaluation report
+Present a clear, structured report:
+
+**Status Changes Made:**
+- List each status change with the decision title, record description, old status, new status, and reason.
+
+**Assumptions Flagged:**
+- List each decision where assumptions may be invalidated, with the specific assumption and why you believe it may no longer hold.
+
+**No Changes Needed:**
+- Briefly note decisions that were evaluated and found to be current and valid.
+
+**Recommendations:**
+- Any decisions that need team attention but where you couldn't make a definitive status change.
+
+## Important guidelines
+- **Be conservative with status changes**: Only change status when you have clear evidence. When in doubt, flag for human review rather than making the change.
+- **Assumptions are the highest-value check**: A decision can have the right status but invalid assumptions — that's a ticking time bomb. Always evaluate assumptions thoroughly.
+- **Provide evidence**: Every status change should include specific evidence (file paths, code patterns, configuration) that justifies the change.
+- **Don't skip any decisions**: Every decision and record should be evaluated, even if it seems obviously current.
+"""
+    return GetPromptResult(
+        description="Audit the codebase against existing decisions and update statuses where appropriate.",
+        messages=[
+            PromptMessage(
+                role="user",
+                content=TextContent(type="text", text=instructions)
+            )
+        ]
+    )
+
+
+def _build_implement_decision_prompt(
+    decision_title: str | None = None
+) -> GetPromptResult:
+    """Build the implement-decision workflow prompt."""
+    instructions = """\
+You are performing the **Implement Decision** workflow for the Curio Decision Record system.
+
+Your goal: Take an accepted decision and implement it in the codebase, respecting all documented constraints, assumptions, and tradeoffs. After implementation, update the decision record status.
+
+## Step-by-step process
+
+### 1. Identify the decision to implement
+"""
+    if decision_title:
+        instructions += f"""The user has specified: **{decision_title}**
+- Call `get_decision(decision_title="{decision_title}")` to retrieve the full decision with all records.
+- Find the `accepted` record for this decision. If there is no accepted record, inform the user — only accepted decisions should be implemented.
+"""
+    else:
+        instructions += """\
+No specific decision was provided.
+- Call `list_decisions(status="accepted")` to show all decisions with accepted records ready for implementation.
+- Present the list to the user and ask which one to implement.
+- Once selected, call `get_decision(decision_title=...)` to retrieve full details.
+"""
+
+    instructions += """
+### 2. Study the decision record thoroughly
+Before writing any code, read and internalize every field of the accepted record:
+- **decision_description**: This is exactly what needs to be implemented.
+- **context**: Understand why this decision was made — it affects how you implement it.
+- **constraints**: These are non-negotiable. Your implementation MUST satisfy every stated constraint.
+- **rationale**: Understand the reasoning so your implementation aligns with the intent.
+- **assumptions**: Verify these are still true before proceeding. If any assumption is no longer valid, STOP and inform the user — the decision may need to be re-evaluated before implementation.
+- **tradeoffs**: Be aware of what was intentionally given up. Don't accidentally try to "fix" an intentional tradeoff.
+- **options_considered**: Understand what was rejected and why, so you don't accidentally implement a rejected approach.
+- **evidence**: Review any linked resources for implementation guidance.
+
+Also check for related decisions:
+- Call `list_decision_relationships` or `list_decision_record_relationships` to see dependencies.
+- If this decision `depends_on` another, verify that dependency is implemented first.
+
+### 3. Plan the implementation
+Before coding:
+- Identify which files need to be created or modified.
+- Plan the changes in a logical order.
+- Ensure the plan respects all constraints.
+- Identify any tests that need to be written or updated.
+
+### 4. Implement the changes
+- Write clean, well-structured code that matches the codebase's existing patterns and conventions.
+- Add appropriate comments referencing the decision where it helps future readers understand why something was done a certain way.
+- Write or update tests as needed.
+- Update any relevant documentation.
+
+### 5. Verify the implementation
+- Run existing tests to make sure nothing is broken.
+- Verify that every stated constraint is satisfied.
+- Confirm that the assumptions listed in the record still hold.
+- Check that you haven't accidentally reintroduced something that was an intentional tradeoff.
+
+### 6. Update the decision record
+- Call `change_record_status` with `status="implemented"` and provide a descriptive reason summarizing what was done (e.g., "Implemented PostgreSQL migration: added models in backend/models.py, migration in migrations/001_initial.sql, updated docker-compose.yml").
+- If the implementation required any deviations from the original proposal, call `update_decision_record` to update relevant fields (e.g., update constraints if new ones were discovered, update consequences if new impacts were found).
+
+### 7. Present summary
+Report what was done:
+- Files created or modified
+- Key implementation decisions made during coding
+- Tests added or updated
+- Any deviations from the original decision record (and why)
+- The status change made
+
+## Important guidelines
+- **Constraints are non-negotiable**: If you cannot satisfy a stated constraint, stop and discuss with the user rather than silently violating it.
+- **Check assumptions first**: If an assumption is no longer valid, the decision itself may be invalid. Don't implement a decision built on false assumptions.
+- **Respect tradeoffs**: The decision record may explicitly say "we give up X for Y." Don't try to have both unless you're proposing a new decision.
+- **One decision at a time**: Focus on implementing the single specified decision. If you discover other decisions are needed, note them but don't scope-creep.
+- **Update the record**: The implementation is not complete until the status is updated. This closes the loop.
+"""
+    return GetPromptResult(
+        description="Implement an accepted decision in the codebase and update its status.",
+        messages=[
+            PromptMessage(
+                role="user",
+                content=TextContent(type="text", text=instructions)
+            )
+        ]
+    )
+
+
+@app.list_prompts()
+async def list_prompts() -> list[Prompt]:
+    """List all available workflow prompts."""
+    return [entry["prompt"] for entry in WORKFLOW_PROMPTS.values()]
+
+
+@app.get_prompt()
+async def get_prompt(name: str, arguments: dict[str, str] | None) -> GetPromptResult:
+    """Get a specific workflow prompt with its detailed instructions."""
+    entry = WORKFLOW_PROMPTS.get(name)
+    if not entry:
+        raise ValueError(f"Unknown prompt: {name}. Available prompts: {', '.join(WORKFLOW_PROMPTS.keys())}")
+    return entry["build"](arguments)
 
 

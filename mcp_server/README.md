@@ -173,6 +173,33 @@ Relationships can link records **across different decisions** within a project.
 - **`list_decisions`**: List decisions with optional status filter (e.g., status="accepted" to find decisions ready to implement)
 - **`get_implementation_history`**: Get implementation history for a decision (by project name and decision title)
 
+## Workflow Prompts
+
+The MCP server exposes 4 workflow prompts that guide coding agents through high-level tasks. These are surfaced as slash commands in clients that support MCP prompts (Claude Code, VS Code). Equivalent instructions are also available as slash commands in Cursor (`.cursor/commands/`) and Claude Code (`.claude/commands/`).
+
+### `initialize_decisions`
+Analyze the codebase and create `implemented_inferred` decision records for every significant architectural choice already reflected in the code. Use this when first setting up Curio for a project.
+- **Arguments**: None (uses workspace project)
+- **What it does**: Explores languages, frameworks, databases, architecture patterns, infrastructure, and configuration; creates decisions and records; establishes relationships between them.
+
+### `analyze_and_propose`
+Analyze the codebase and existing decisions, optionally with additional resources and goals, then propose new decisions or records where gaps exist.
+- **Arguments**:
+  - `resources` (optional) — Comma-separated URLs or references to papers, docs, RFCs to consider
+  - `intent` (optional) — Goals or areas to focus on (e.g., "improve observability", "prepare for multi-tenancy")
+- **What it does**: Reviews all existing decisions, analyzes the codebase, incorporates provided resources and intent, then creates `proposed` records with thoroughly filled fields and relationships.
+
+### `evaluate_decisions`
+Audit the codebase against existing decision records and update statuses where appropriate.
+- **Arguments**: None
+- **What it does**: Checks accepted records for implementation evidence, checks implemented records for deprecation, and most critically — evaluates whether stated assumptions are still valid.
+
+### `implement_decision`
+Take an accepted decision and implement it in the codebase, then update its status.
+- **Arguments**:
+  - `decision_title` (optional) — Title of the decision to implement. If omitted, lists all accepted decisions.
+- **What it does**: Retrieves decision details, verifies assumptions still hold, implements the changes respecting all constraints and tradeoffs, then marks the record as implemented.
+
 ## Status Enums
 
 Decision records use a status enum to track their lifecycle. All tools that accept or filter by status use these values:
